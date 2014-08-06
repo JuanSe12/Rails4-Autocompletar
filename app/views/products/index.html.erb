@@ -1,0 +1,38 @@
+<h1>Lista de Productos</h1>
+
+<hr>
+<%= form_tag products_path, class: "form-inline", role: "form",  method: 'get' do %>
+      <label>Autocomplete por nombre:</label>
+      <div class="form-group">
+        <%= autocomplete_field_tag 'brand_name', '',"/products/autocomplete_brand_name",
+           :size => 25, 'data-delimiter' => '', :multiple => true %>
+      </div>
+<% end %>
+<table  class="table table-striped table-hover ">
+  <thead>
+    <tr>
+      <th>Brand</th>
+      <th colspan="3">Opciones</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <% @products.each do |product| %>
+      <tr>
+        <td><%= product.brand_id %></td>
+        <td><%= link_to 'Ver', product %></td>
+        <td><%= link_to 'Editar', edit_product_path(product) %></td>
+        <td><%= link_to 'Eliminar', product, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<br>
+
+<%= link_to 'Nuevo Producto', new_product_path %>
+<hr>
+
+<ul class="nav nav-pills nav-stacked" style="max-width: 300px;">
+  <li class="active"><%= link_to "Ir a agregar marcas", controller: "brands", action: "index" %></li>
+</ul>
