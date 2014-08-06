@@ -1,28 +1,125 @@
 == README
 
-This README would normally document whatever steps are necessary to get the
-application up and running.
+GUIA Rails4-Autocomplete
 
-Things you may want to cover:
+Primero instalamos las gemas:
+    Ponemos lo siguiente en el gemfile.
 
-* Ruby version
+gem 'rails4-autocomplete'
+gem 'jquery-ui-rails'
 
-* System dependencies
+    Hacemos bundle install en la terminal.
 
-* Configuration
+Ahora de debe modificar en assets/javascripts/application.js , aseguremosnos de que tenemos estos require, si no estan los ponen.
 
-* Database creation
+//= require autocomplete-rails
+//= require jquery_ujs
+//= require jquery-ui
 
-* Database initialization
+Como autocomplete utiliza jquery debemos descargar algunos archivos para que funcione. Vamos al siguiente link : http://jqueryui.com/download/ y descargamos en la parte inferior esta el boton de descarga, los archivos .js y .css que vienen adentro los copiamos y los pegamos en sus respectivas carpetas, obviamente .js en assets/javascripts y los .css en assets/stylesheets (tambien el archivo que hay en la carpeta external).
 
-* How to run the test suite
+Luego que ya tenemos lo de jquery organizado, vamos a modificar y configurar la aplicación.
 
-* Services (job queues, cache servers, search engines, etc.)
+Creamos dos scaffolds uno llamado brand (marca) que este contiene los nombres que van a aparecer a la hora de buscar en un label y se auto complementaran. Otro llamado product este es el mas importante, va a tener el autocomplete.
 
-* Deployment instructions
+rails g scaffold brand name:string
 
-* ...
+rails g scaffold product brand_id (si quieren le pueden añadir mas campos  lo importante es que tenga brand_id)
+ 
+Hacemos rake db:create y rake db:migrate
+
+Luego nos vamos al modelo de Brand y ponemos estos métodos que nos ayudaran con lo del autocomplete.
+
+class Brand < ActiveRecord::Base
+
+    has_many :products
+  
+      # metodos autocomplete
+      def brand_name
+          brand.name if brand
+      end
+
+      def brand_name=(name)
+          self.brand = Brand.find_by_name(name)
+      end
+end
+
+Ya toca las vistas, ponemos estas lineas de código en index.html.erb de products, como pueden ver contiene el label que funcionará con autocomplete.
+
+<%= form_tag products_path, class: "form-inline", role: "form",  method: 'get' do %>
+      <label>Autocomplete por nombre:</label>
+      <div class="form-group">
+        <%= autocomplete_field_tag 'brand_name', '',"/products/autocomplete_brand_name",
+           :size => 25, 'data-delimiter' => '', :multiple => true %>
+      </div>
+<% end %>
+
+Asegúrese de que tienen lo que está marcado en rojo así en su aplicación.
+
+<tbody>
+    <% @products.each do |product| %>
+      <tr>
+        <td><%= product.brand_id %></td>
+        <td><%= link_to 'Ver', product %></td>
+        <td><%= link_to 'Editar', edit_product_path(product) %></td>
+        <td><%= link_to 'Eliminar', product, method: :delete, data: { confirm: 'Are you sure?' } %></td>
+      </tr>
+    <% end %>
+  </tbody>
+
+En el partial _form.html.erb de products, quitan el div del label en donde normalmente se pone el nombre y luego se crea, lo que vamos a hacer es un autocomplete en este label para que cuando se cree un nombre de marca nueva se autocomplete con la lista de marcas disponibles. Reemplazen ese div por el siguiente codigo en rojo.
+
+<%= form_for(@product) do |f| %>
+  <% if @product.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@product.errors.count, "error") %> prohibited this product from being saved:</h2>
+
+      <ul>
+      <% @product.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
 
 
-Please feel free to use a different markup language if you do not plan to run
+  <%=f.autocomplete_field :brand_id, autocomplete_brand_name_products_path, :placeholder => "Nombre..." %>
+
+
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>
+
+
+
+
+
+Listo, ahora nos vamos al controlador de Products y ponemos lo que esta en rojo, justo en donde se puede ver que va.
+
+class ProductsController < ApplicationController
+  before_action :set_product, only: [:show, :edit, :update, :destroy]
+
+  autocomplete :brand, :name, full: false
+…
+
+Ya casi hemos terminado, vamos a config/routes.rb y reemplazamos :
+
+Original:
+  resources :products
+
+  resources :brands
+
+Reemplazado:
+  resources :products  do
+      get :autocomplete_brand_name, :on => :collection
+  end
+
+  resources :brands
+
+Listo, ahora lo que debemos hacer es entrar a la aplicación, ir a localhost:3000/brands  y llenar esta tabla con algunas marcas, luego ir a products y buscar lo que acabamos de poner en brands.
+
+Descarga el demo: https://github.com/JuanSe12/Rails4-Autocompletar
+
+
 <tt>rake doc:app</tt>.
